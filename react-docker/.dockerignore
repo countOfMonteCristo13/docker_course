@@ -1,0 +1,2 @@
+node_modules/
+# zelimo da excludujemo node_modules u dockeru kako bi on na osnovu package.jsona znao sta mu treba

@@ -1,0 +1,205 @@
+DOCKER
+
+Dva najbitnija koncepta u Dockeru su 
+IMAGES i CONTAINERS
+
+Ceo rad Dockera je baziran na njima.
+
+IMAGES:
+	Lightweight
+	Standalone
+	Executable package
+Sadrzi sve sto je potrebno da se pokrene odredjeni software.
+
+To podrazumeva:
+Code
+Runtime(Node)
+Libraries
+System tools
+Pa cak i operativni sistem
+
+Posmatrajmo Docker Image kao recept za jelo.
+Sadrzi sastojke(kod i biblioteke) kao i uputstvo za pravljenje
+
+Mi sad taj image zelimo da pokrenemo i pokrenucemo ga preko kontejnera.
+Kontejner je runnable instace od image-a.
+
+Predstavlja okruzenje za pokretanje odredjene aplikacije
+
+Kontejner koristi kod i biblioteke. Takodje skida odredjene dependencies
+Takodje prati instrukcije za kreiranje app-a.
+
+Od jednog IMAGE moze da se kreira vise CONTAINER-A
+
+VOLUMES
+
+Persistent data storage mechanism
+Omogucava serovanje podataka izmedju kontejnera i host machine(kompjuter)
+Omogucava serovanje podataka izmedju kontejnera
+
+Posmatramo go kao folder koji se seruje i postoji van kontejnera
+
+
+DOCKER NETWORK
+
+Kanal komunikacije koji omogucava razlicitim kontejnerima da komuniciraju
+ili da se komunicira sa spoljnim svetom
+
+Omogucava da su svi kontejneri povezani
+
+DOCKER WORKFLOW
+
+Sastoji se od tri dela
+	Docker Client
+	Docker Host (Daemon)
+	Docker Registry (Hub)
+
+Docker Client je UI za interakciju sa Dockerom!
+Alat koji koristimo da zadamo komande Dockeru!\
+Komande mozemo da damo preko Terminala ili preko GUI-a
+
+Docker Host slusa komadne Clienta
+Upravlja kontejnerima i kreira images
+i hendluje druge docker taskove!
+
+Docker Hub je centralizovan repozitorijum docker images
+Kao sto je GitHub za Git tako je i DockerHub za Docker.
+
+KAKO SE KORISTI DOCKER
+
+Image se kreira preko Docker file-a koji ima svoju sintaksu!
+
+Kada pull-ujes image primer docker pull ubuntu. 
+Prvo ce se pogledati da li imas na lokalnoj masini taj image. Ukoliko nemas taj image onda ce se traziti na hub-u
+Tako smo povukli image koji vec postoji tj aplikaciju koja vec postoji.
+
+Ako zelimo da je pokrenemo tj da kreiramo container izvrsavamo komandu docker run -it(interactive) <ime-image>
+Na ovaj nacin smo kreirali container!!!
+Posto smo pokrenuli sada u terminalu imamo da koristimo ubuntu!
+BUKVALNO SMO POKRENULI DRUGI OPERATIVNI SISTEM PREKO DOCKERA!!!
+
+KAKO KREIRAMO NAS IMAGE?
+
+Prvo u folderu projekta kreiramo fajl koji se nazive Dockerfile bez ekstenzije!!!
+
+U fajlu pisemo na osnovu njegove sintakse.
+Moramo da se zapitamo sta pokrecemo. Posto pokrecemo js file trebace nam node runtime tako da nam je to baza(base)
+Pisemo:
+FROM node:20-alpine 
+20-alpine je verzija koja se koristi (Linuxova neka)
+
+Zatim zelimo da deklarisemo radni direktorijum gde ce biti pokrenute komande!!!
+WORKDIR /app
+# /app je konvencija da bude WORKDIR
+
+COPY . .
+Oznacava da kopiramo sve iz radnog direktorijuma u docker image
+prva tacka je trenutni direktorijum na nasoj masini a druga je path za trenutni direktorijum container-a
+
+CMD node hello.js
+# naglasavamo kako se pokrece nas projekat
+
+Nakon toga u terminalu odlazimo u radni direktorijum
+Unosimo komadnu
+docker build -t(tag) hello-docker . (putanja za docker file)
+Tag je opcionalan ako je ne stavis onda ce biti poslednji
+Tako kreiramo IMAGE!!!
+
+Ako zelimo da proverimo da li je uspeo build samo unesemo komandu docker images i onda ce ti biti ispisani svi images!!!
+i sada kad pokrecemo image tj kreiramo container kucamo docker run hello-docker(ime image-a)
+Ako zelimo da pokrenemo samo projekat i da iz njega pokrecemo node onda unosimo komandu docker run -it hello-docker sh
+
+
+NOVI PROJEKAT (REACT)
+
+Kreiramo ga preko vite-a ali ne radimo npm install jer ne zelimo da kreiramo node modules jer zelimo da sve to bude preko DOCKERA!!!
+
+Prvo kreiramo dockerfile
+Nakon toga kreiramo .dockerignore i u njemu stavimo node_modules kako ne bi zavrsio na dockeru kako bi docker mogao na osnovu package.json-a da odradi svoje!
+
+Nakon toga buildujemo image i zatim pokrecemo image (kreiramo container)
+
+EXPOSE govori dokeru koji port nas kontejner treba da slusa tokom runtime-a
+Kada pokusas da udjes na localhost:5173 nece hteti da ocita.
+Zasto?
+Docker i kontejner znaju koji port treba da se slusa ali host ne zna tj kompjuter na kom radimo!!!
+SVAKI CONTAINER RADI U IZOLOVANOM OKRUZENJU!
+Po defaultu ne exposuju port host tj lokalnoj masini!
+
+Da bi Host ima pritup tome moramo da odradimo koncept PORT MAPPING!!!
+Dozvoljava nam da mapiramo portove izmedju hosta i containera!!!
+Postizemo sa komandom:
+docker run -p 5173:5173 react-docker
+prvo 5173 je containerov port a drugo je hostov port
+
+opet nece raditi jer koristimo vite a i kod njega moramo host da exposujemo
+postizemo tako sto u package.json na dev kod vite-a dodajemo --host!!!
+
+komande:
+docker ps izlista sve continere vezane za ovaj image
+docker ps -a izlista sve containere!
+docker stop kod kod predstavlja id od containere mogu da budu prva tri karaktera ili mozes ceo id da stavis i tako zaustavljas rad containera!!!
+docker container prune izbrisace sve containere koji su stopirani!
+docker rm kod/ime
+
+Sada radi ali nastaje problem kada napravimo izmene u kodu jer onda se ne desi nista
+Kako bi napravili da se automatski azurira kucamo komandu
+docker run -p 5173:5173 -v "$(pwd):/app" -v /app/node_modules react-docker
+-v predstavlja volume koji ce da prati promene koje izvrsavamo
+$(pdw) predstavlja lokalni kod
+
+-v /app/node_modules kreiramo volume za node_modules da ne mora konstantno da se instalira node_modules 
+
+Sada ide publikacija Docker Image-a!!!
+
+U terminalu udjemo u projekat direktorijum
+komanda docker login 
+zatim komanda za publishovanje
+docker tag react-docker countmontecristo13/react-docker
+zatim pushujemo na hub
+docker push countmontecristo13/react-docker
+Sada imamo na hubu 
+
+IMAMO PROBLEM KADA RADIMO NA OVAJ NACIN A TO JE KONSTANTO BUILDOVANJE IMAGE-A I KREIRANJE KONTAINERA NOVOG
+SVE TO MOZEMO DA AUTOMATIZUJEMO PREKO DOCKER COMPOSE-A!!!
+
+Koristi YML fajlove za services, network i volumes za tvoju aplikaciju sto nam omogucava
+da pokrecemo i skaliramo nasu aplikaciju sa jednom komandom docker compose up
+
+Da bi se sve to postiglo kreiracemo NOVI PROJEKAT
+Kreiramo ga preko vitea i nazivamo ga vite-project
+Odlazimo u direktorijum projekta 
+Zadajemo komandu docker init
+odgovaramo na odredjena pitanja
+zatim budu kreirana tri fajla
+dockerignore
+dockerfile i 
+compose.yaml
+
+Za pocetak mozemo da prekopiramo dockerfile iz prethodnog projekta
+Prelazimo u yaml file i preimenujemo server u web jer je to konvencija za web aplikacije
+Brisemo environment jer na ne treba env varijable!
+
+dodajemo ovo
+    volumes:
+      - .:/app
+      - /app/node_modules
+prvo je za updejtovanje konstantno a drugo je za node_modules da ne mora stalno da se instaliraju
+
+Nakon toga pokreces preko compose-a
+ali pre toga moras izmenite vite.config
+
+
+ZATIM UCIMO DOCKER COMPOSE WATCH
+
+-SLUSA PROMENE I RADI NESTO!
+* REBUILDUJE APP
+* RE-RUNUJE CONTAINER
+
+AUTOMATSKI UPDEJTUJE SERVICE CONTAINER DOK RADIMO
+
+Sa COMPOSE WATCH mozemo da odradimo 3 STVARI 
+1. SINKUJEMO PROMENJENE FAJLOVE NA LOKALNOJ MASINI SA CONTAINEROM
+2. REBUILD
+3. SYNC-RESTART merguje prva dva
+
